@@ -14,7 +14,7 @@ import java.lang.reflect.Method;
 public class WsClient extends WebSocketClient {
 
   private Object parent;
-  private Method onOpenMethod, onCloseMethod, onMessageMethod;
+  private Method onOpenMethod, onCloseMethod, onMessageMethod, onBinaryMessageMethod;
 
   public WsClient( Object app, URI serverUri, Draft draft ) {
     super( serverUri, draft );
@@ -65,6 +65,15 @@ public class WsClient extends WebSocketClient {
     } 
     catch (Exception e) {
     }
+
+    try {
+      onBinaryMessageMethod = parent.getClass().getMethod("onBinaryMessage", new Class[] {
+        String.class
+      }
+      );
+    } 
+    catch (Exception e) {
+    }
   }
 
   @Override
@@ -89,6 +98,19 @@ public class WsClient extends WebSocketClient {
       catch( Exception e ) {
         System.err.println("onMessage invoke failed, disabling :(");
         onMessageMethod = null;
+      }
+    }
+  }
+
+  @Override
+  public void onMessage( ByteBuffer bytes ){
+    if (onBinaryMessageMethod != null){
+      try {
+      onBinaryMessageMethod.invoke( parent, bytes);
+      } 
+      catch( Exception e ) {
+        System.err.println("onBinaryMessage invoke failed, disabling :(");
+        onBinaryMessageMethod = null;
       }
     }
   }
